@@ -174,3 +174,46 @@ int release_resources(int customer_num, int request[]){
     return 0;
 }
 
+void* customer_thread(void* param) {
+    int customer_num = *(int*)param;
+    int request[NUMBER_OF_RESOURCES];
+    int release[NUMBER_OF_RESOURCES];
+
+    while (true) { 
+        
+        // Gerando requisição aleatória limitada pelo 'need'
+        for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
+            if (need[customer_num][i] > 0) {
+                request[i] = rand() % (need[customer_num][i] + 1);
+            } else {
+                request[i] = 0;
+            }
+        }
+
+        // Mostrando o que o cliente quer pedir
+        printf("Cliente %d tentando pedir: [%d, %d, %d]\n", customer_num, request[0], request[1], request[2]);
+
+        // Tentando solicitar os recursos
+        if (request_resources(customer_num, request) == 0) {
+            printf("--> APROVADO: Cliente %d pegou os recursos!\n", customer_num);
+
+            // Gerando liberação aleatória limitada pelo que está alocado 
+            for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
+                if (allocation[customer_num][i] > 0) {
+                    release[i] = rand() % (allocation[customer_num][i] + 1);
+                } else {
+                    release[i] = 0;
+                }
+            }
+
+            printf("Cliente %d devolvendo: [%d, %d, %d]\n", customer_num, release[0], release[1], release[2]);
+            release_resources(customer_num, release);
+
+        } else {
+            printf("--> NEGADO: Pedido do Cliente %d deixaria o banco inseguro (Aguardando...)\n", customer_num);
+            sleep(1); // Espera um pouco antes da próxima rodada
+        }
+    }
+    return NULL;
+}
+
