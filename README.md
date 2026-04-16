@@ -10,3 +10,12 @@ Este projeto implementa o Algoritmo do Banqueiro, com o objetivo de alocar recur
 - `docs/`: Diretório contendo o relatório final em PDF.
 
 ## Como Compilar
+
+Para compilar o código fonte, certifique-se de ter o compilador GCC instalado. Abra o terminal na raiz do projeto e execute o seguinte comando:
+
+```bash
+gcc -o banqueiro src/main.c -lpthread -Wall
+```
+## Autores
+
+- [Caio César Falinacio dos Santos / Luiz Fernando Cunha Maia]
