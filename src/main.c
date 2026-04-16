@@ -44,3 +44,61 @@ int main(int argc, char *argv[]){
     return 0;
 }
 
+bool is_safe() {
+    //Inicializando os vetores Trabalho (work) e Término (finish)
+    int work[NUMBER_OF_RESOURCES];
+    bool finish[NUMBER_OF_CUSTOMERS];
+
+    // Trabalho = Disponível
+    for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
+        work[i] = available[i];
+    }
+
+    // Término[i] = false para todo i
+    for (int i = 0; i < NUMBER_OF_CUSTOMERS; i++) {
+        finish[i] = false;
+    }
+
+    // Encontrando uma sequência segura
+    int count = 0; // Conta quantos clientes conseguiram terminar
+    while (count < NUMBER_OF_CUSTOMERS) {
+        bool found = false; // Flag para verificar se foi encontrado um cliente nesta rodada
+
+        for (int i = 0; i < NUMBER_OF_CUSTOMERS; i++) {
+            if (!finish[i]) {
+                // Necessidade_i <= Trabalho
+                bool can_allocate = true;
+                for (int j = 0; j < NUMBER_OF_RESOURCES; j++) {
+                    if (need[i][j] > work[j]) {
+                        can_allocate = false;
+                        break; // Se um recurso não for suficiente, já quebra o laço
+                    }
+                }
+
+                // Se puder alocar (Passo 3)
+                if (can_allocate) {
+                    for (int j = 0; j < NUMBER_OF_RESOURCES; j++) {
+                        work[j] += allocation[i][j]; // Trabalho = Trabalho + Alocação_i
+                    }
+                    finish[i] = true; // Término[i] = true
+                    found = true;
+                    count++;
+                }
+            }
+        }
+
+        // Se passar por todos os clientes e não achar ninguém que possa terminar, o laço é quebrado.
+        if (!found) {
+            break;
+        }
+    }
+
+    // Se Término[i] == true para todo i, então o estado é seguro
+    // Como usamos a variável 'count', basta checar se ela chegou ao total de clientes
+    if (count == NUMBER_OF_CUSTOMERS) {
+        return true;  // Estado Seguro
+    } else {
+        return false; // Estado Inseguro
+    }
+}
+
