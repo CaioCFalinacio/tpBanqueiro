@@ -149,3 +149,28 @@ int request_resources(int customer_num, int request[]){
     }
 }
 
+int release_resources(int customer_num, int request[]){
+    // Bloquear o mutex para evitar condição de corrida
+    pthread_mutex_lock(&banco_mutex);
+
+    // Verificar se o cliente está tentando devolver mais do que ele realmente tem alocado 
+    for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
+        if (release[i] > allocation[customer_num][i]) {
+            pthread_mutex_unlock(&banco_mutex);
+            return -1; // O cliente está tentando devolver mais do que tem alocado, o que é inválido
+        }
+    }
+
+    // Devolver os recursos ao banco e atualizar as matrizes do cliente
+    for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
+        available[i] += release[i];
+        allocation[customer_num][i] -= release[i];
+        need[customer_num][i] += release[i]; 
+    }
+
+    // Desbloquear o mutex para que outras threads possam usar o banco
+    pthread_mutex_unlock(&banco_mutex);
+
+    return 0;
+}
+
