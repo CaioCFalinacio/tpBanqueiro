@@ -102,3 +102,50 @@ bool is_safe() {
     }
 }
 
+int request_resources(int customer_num, int request[]){
+    pthread_mutex_lock(&banco_mutex);
+
+    // Verificar se o cliente está pedindo mais do que ele disse que precisaria (need)
+    for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
+        if (request[i] > need[customer_num][i]) {
+            // O cliente excedeu sua demanda máxima
+            pthread_mutex_unlock(&banco_mutex);
+            return -1; // Nega o pedido
+        }
+    }
+
+    // Verificar se o banco tem os recursos disponíveis no momento
+    for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
+        if (request[i] > available[i]) {
+            // Os recursos não estão disponíveis; o cliente deve esperar
+            pthread_mutex_unlock(&banco_mutex);
+            return -1; // Nega o pedido
+        }
+    }
+
+    // Fingir a alocação dos recursos para testar a segurança
+    for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
+        available[i] -= request[i];
+        allocation[customer_num][i] += request[i];
+        need[customer_num][i] -= request[i];
+    }
+
+    // Rodar o Algoritmo de Segurança com o estado alterado
+    if (is_safe()) {
+        // O estado é seguro.
+        pthread_mutex_unlock(&banco_mutex);
+        return 0; 
+    } else {
+        // O estado é inseguro. 
+        for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
+            available[i] += request[i];
+            allocation[customer_num][i] -= request[i];
+            need[customer_num][i] += request[i];
+        }
+        
+        // Desbloqueamos o mutex e negamos o pedido
+        pthread_mutex_unlock(&banco_mutex);
+        return -1; // Falha [cite: 33]
+    }
+}
+
