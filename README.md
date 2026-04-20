@@ -16,6 +16,11 @@ Biblioteca Pthreads (POSIX Threads)
 
 Mutex para sincronização e prevenção de condições de corrida
 
+## Pré-requisitos
+- Compilador **GCC** (GNU Compiler Collection).
+- Biblioteca **pthread** (nativa em sistemas baseados em Unix/Linux).
+- **Nota para ambientes Windows:** Como o projeto utiliza a biblioteca nativa do padrão POSIX, recomenda-se a compilação e execução através do **WSL (Windows Subsystem for Linux)** ou de ambientes compatíveis (como MSYS2/MinGW).
+
 ## Como Compilar
 
 Para compilar o código fonte, certifique-se de ter o compilador GCC instalado. Abra o terminal na raiz do projeto e execute o seguinte comando:

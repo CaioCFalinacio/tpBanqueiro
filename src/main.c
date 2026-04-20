@@ -5,86 +5,67 @@
 #include <unistd.h>
 #include <time.h>
 
-/* Constantes definidas no roteiro do trabalho */
 #define NUMBER_OF_CUSTOMERS 5  
 #define NUMBER_OF_RESOURCES 3
 
- // Montante disponível de cada recurso 
 int available[NUMBER_OF_RESOURCES];  
-// Demanda máxima de cada cliente                    
 int maximum[NUMBER_OF_CUSTOMERS][NUMBER_OF_RESOURCES];  
-// Montante correntemente alocado a cada cliente        
 int allocation[NUMBER_OF_CUSTOMERS][NUMBER_OF_RESOURCES];   
-// Necessidade remanescente de cada cliente    
 int need[NUMBER_OF_CUSTOMERS][NUMBER_OF_RESOURCES];  
 
-/* Mutex para evitar condição de corrida */
 pthread_mutex_t banco_mutex;
 
-/* Protótipos exigidos pelo trabalho */
 int request_resources(int customer_num, int request[]); 
 int release_resources(int customer_num, int release[]); 
 
-/* Protótipos auxiliares */
 
-// Para isolar a lógica do algoritmo do banqueiro
 bool is_safe(); 
-// Comportamento das thread
 void* customer_thread(void* customer_id); 
 
 int main(int argc, char *argv[]){
 
-    // Validando argumentos da linha de comando
     if (argc != NUMBER_OF_RESOURCES + 1) {
         printf("Uso incorreto. Exemplo: ./banqueiro 10 5 7\n");
         return -1;
     }
 
-    // Inicializando o gerador de números aleatórios
     srand(time(NULL));
 
-    // Inicializando o array 'available' com os argumentos 
     for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
         available[i] = atoi(argv[i + 1]);
     }
 
-    // Inicializando os dados de teste clássicos do livro do Silberschatz para 'maximum'
     int max_test_data[NUMBER_OF_CUSTOMERS][NUMBER_OF_RESOURCES] = {
-        {7, 5, 3}, // Cliente 0
-        {3, 2, 2}, // Cliente 1
-        {9, 0, 2}, // Cliente 2
-        {2, 2, 2}, // Cliente 3
-        {4, 3, 3}  // Cliente 4
+        {7, 5, 3}, 
+        {3, 2, 2}, 
+        {9, 0, 2}, 
+        {2, 2, 2}, 
+        {4, 3, 3}  
     };
 
-    // Inicializando matrizes maximum, allocation e need
     for (int i = 0; i < NUMBER_OF_CUSTOMERS; i++) {
         for (int j = 0; j < NUMBER_OF_RESOURCES; j++) {
             maximum[i][j] = max_test_data[i][j];
-            allocation[i][j] = 0; // Começa com nada alocado
-            need[i][j] = maximum[i][j]; // Necessidade inicial é a máxima
+            allocation[i][j] = 0; 
+            need[i][j] = maximum[i][j];  
         }
     }
 
-    // Inicializando o Mutex
     pthread_mutex_init(&banco_mutex, NULL);
     printf("Banco aberto com recursos iniciais: [%d, %d, %d]\n\n", available[0], available[1], available[2]);
 
-    // Criando as Threads dos clientes
     pthread_t threads[NUMBER_OF_CUSTOMERS];
-    int thread_ids[NUMBER_OF_CUSTOMERS]; // Array para passar o ID corretamente
+    int thread_ids[NUMBER_OF_CUSTOMERS]; 
 
     for (int i = 0; i < NUMBER_OF_CUSTOMERS; i++) {
         thread_ids[i] = i;
         pthread_create(&threads[i], NULL, customer_thread, &thread_ids[i]);
     }
 
-    // Aguardando todas as threads terminarem (Join)
     for (int i = 0; i < NUMBER_OF_CUSTOMERS; i++) {
         pthread_join(threads[i], NULL);
     }
 
-    // Limpando o mutex ao finalizar
     pthread_mutex_destroy(&banco_mutex);
     printf("\nTodos os clientes terminaram. Banco fechado.\n");
 
@@ -92,130 +73,109 @@ int main(int argc, char *argv[]){
 }
 
 bool is_safe() {
-    //Inicializando os vetores Trabalho (work) e Término (finish)
     int work[NUMBER_OF_RESOURCES];
     bool finish[NUMBER_OF_CUSTOMERS];
 
-    // Trabalho = Disponível
     for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
         work[i] = available[i];
     }
 
-    // Término[i] = false para todo i
     for (int i = 0; i < NUMBER_OF_CUSTOMERS; i++) {
         finish[i] = false;
     }
 
-    // Encontrando uma sequência segura
-    int count = 0; // Conta quantos clientes conseguiram terminar
+    int count = 0; 
     while (count < NUMBER_OF_CUSTOMERS) {
-        bool found = false; // Flag para verificar se foi encontrado um cliente nesta rodada
+        bool found = false; 
 
         for (int i = 0; i < NUMBER_OF_CUSTOMERS; i++) {
             if (!finish[i]) {
-                // Necessidade_i <= Trabalho
                 bool can_allocate = true;
                 for (int j = 0; j < NUMBER_OF_RESOURCES; j++) {
                     if (need[i][j] > work[j]) {
                         can_allocate = false;
-                        break; // Se um recurso não for suficiente, já quebra o laço
+                        break; 
                     }
                 }
 
-                // Se puder alocar (Passo 3)
                 if (can_allocate) {
                     for (int j = 0; j < NUMBER_OF_RESOURCES; j++) {
-                        work[j] += allocation[i][j]; // Trabalho = Trabalho + Alocação_i
+                        work[j] += allocation[i][j]; 
                     }
-                    finish[i] = true; // Término[i] = true
+                    finish[i] = true; 
                     found = true;
                     count++;
                 }
             }
         }
 
-        // Se passar por todos os clientes e não achar ninguém que possa terminar, o laço é quebrado.
         if (!found) {
             break;
         }
     }
 
-    // Se Término[i] == true para todo i, então o estado é seguro
-    // Como usamos a variável 'count', basta checar se ela chegou ao total de clientes
     if (count == NUMBER_OF_CUSTOMERS) {
-        return true;  // Estado Seguro
+        return true;  
     } else {
-        return false; // Estado Inseguro
+        return false; 
     }
 }
 
 int request_resources(int customer_num, int request[]){
     pthread_mutex_lock(&banco_mutex);
 
-    // Verificar se o cliente está pedindo mais do que ele disse que precisaria (need)
     for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
         if (request[i] > need[customer_num][i]) {
-            // O cliente excedeu sua demanda máxima
             pthread_mutex_unlock(&banco_mutex);
-            return -1; // Nega o pedido
+            return -1; 
         }
     }
 
-    // Verificar se o banco tem os recursos disponíveis no momento
     for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
         if (request[i] > available[i]) {
-            // Os recursos não estão disponíveis; o cliente deve esperar
             pthread_mutex_unlock(&banco_mutex);
-            return -1; // Nega o pedido
+            return -1; 
         }
     }
 
-    // Fingir a alocação dos recursos para testar a segurança
     for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
         available[i] -= request[i];
         allocation[customer_num][i] += request[i];
         need[customer_num][i] -= request[i];
     }
 
-    // Rodar o Algoritmo de Segurança com o estado alterado
     if (is_safe()) {
-        // O estado é seguro.
         pthread_mutex_unlock(&banco_mutex);
         return 0; 
     } else {
-        // O estado é inseguro. 
         for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
             available[i] += request[i];
             allocation[customer_num][i] -= request[i];
             need[customer_num][i] += request[i];
         }
         
-        // Desbloqueamos o mutex e negamos o pedido
         pthread_mutex_unlock(&banco_mutex);
-        return -1; // Falha [cite: 33]
+        return -1; 
     }
 }
 
 int release_resources(int customer_num, int release[]){
-    // Bloquear o mutex para evitar condição de corrida
+
     pthread_mutex_lock(&banco_mutex);
 
-    // Verificar se o cliente está tentando devolver mais do que ele realmente tem alocado 
     for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
         if (release[i] > allocation[customer_num][i]) {
             pthread_mutex_unlock(&banco_mutex);
-            return -1; // O cliente está tentando devolver mais do que tem alocado, o que é inválido
+            return -1;
         }
     }
 
-    // Devolver os recursos ao banco e atualizar as matrizes do cliente
     for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
         available[i] += release[i];
         allocation[customer_num][i] -= release[i];
         need[customer_num][i] += release[i]; 
     }
 
-    // Desbloquear o mutex para que outras threads possam usar o banco
     pthread_mutex_unlock(&banco_mutex);
 
     return 0;
@@ -228,7 +188,6 @@ void* customer_thread(void* param) {
 
     for(int iter = 0; iter < 5; iter++) { 
         
-        // Gerando requisição aleatória limitada pelo 'need'
         for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
             if (need[customer_num][i] > 0) {
                 request[i] = rand() % (need[customer_num][i] + 1);
@@ -237,14 +196,11 @@ void* customer_thread(void* param) {
             }
         }
 
-        // Mostrando o que o cliente quer pedir
         printf("Cliente %d tentando pedir: [%d, %d, %d]\n", customer_num, request[0], request[1], request[2]);
 
-        // Tentando solicitar os recursos
         if (request_resources(customer_num, request) == 0) {
             printf("--> APROVADO: Cliente %d pegou os recursos!\n", customer_num);
 
-            // Gerando liberação aleatória limitada pelo que está alocado 
             for (int i = 0; i < NUMBER_OF_RESOURCES; i++) {
                 if (allocation[customer_num][i] > 0) {
                     release[i] = rand() % (allocation[customer_num][i] + 1);
@@ -258,7 +214,7 @@ void* customer_thread(void* param) {
 
         } else {
             printf("--> NEGADO: Pedido do Cliente %d deixaria o banco inseguro (Aguardando...)\n", customer_num);
-            sleep(1); // Espera um pouco antes da próxima rodada
+            sleep(1); 
         }
     }
     return NULL;
