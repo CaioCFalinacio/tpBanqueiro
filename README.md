@@ -2,7 +2,7 @@
 
 ## Sobre o projeto
 
-Este projeto implementa o Algoritmo do Banqueiro, com o objetivo de alocar recursos a múltiplos clientes (threads) garantindo que o sistema permaneça sempre em um estado seguro, prevenindo *deadlocks*. O projeto foi desenvolvido em **C**, utilizando a biblioteca **Pthreads** e *locks mutex* para evitar condições de corrida.O objetivo é gerenciar a alocação de recursos e evitar estados de deadlock.
+Este projeto implementa o Algoritmo do Banqueiro, com o objetivo de gerenciar a alocação de recursos a múltiplos clientes (threads) garantindo que o sistema permaneça sempre em um estado seguro, prevenindo *deadlocks*. O projeto foi desenvolvido em **C**, utilizando a biblioteca **Pthreads** e *locks mutex* para evitar condições de corrida.
 
 ## Estrutura de arquivos
 
@@ -42,7 +42,7 @@ Exemplo prático:
 ```
 
 ## Funcionamento
-Ao iniciar, o programa cria NUMBER_OF_CUSTOMERS threads de clientes. Cada cliente solicitará e liberará recursos em um loop contínuo. O "Banqueiro" processa essas solicitações através das funções:
+Ao iniciar, o programa cria 5 threads de clientes. Cada cliente solicitará e liberará recursos em um loop contínuo. O "Banqueiro" processa essas solicitações através das funções:
 request_resources(): Avalia se a solicitação mantém o sistema em um estado seguro antes de concedê-la.
 
 release_resources(): Libera os recursos utilizados de volta para o banco.
